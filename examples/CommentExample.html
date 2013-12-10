@@ -33,17 +33,78 @@
 				];
 
 				var options = {
+					series: {
+						points: {
+							show: true
+						},
+						lines: {
+							show: true
+						}
+					},
 					grid: {
 						show: true,
 						borderColor: "#000",
 						borderWidth: 0,
 						aboveData: false
 					},
+					comment: {
+						show: true
+					},
 					comments: [
 						{
 							x: -2,
 							y: 1,
-							contents: "This point"
+							contents: "this point 1"
+						},
+						{
+							x: 1,
+							y: 2,
+							contents: "this point 2"
+						},
+						{
+							x: 3.6,
+							y: 2.5,
+							contents: "Expect new point"
+						}
+					],
+					sidenote: {
+						show: true
+					},
+					sidenotes: [
+						{
+							y: -4,
+							contents: "Low Level",
+							offsetX: 0,
+							offsetY: 0,
+							maxWidth: 0.15
+						},
+						{
+							y: 0,
+							contents: "Base Level",
+							offsetX: 0,
+							offsetY: 0,
+							maxWidth: 0.15
+						},
+						{
+							y: 4,
+							contents: "Fair level",
+							offsetX: 0,
+							offsetY: 0,
+							maxWidth: 0.15
+						},
+						{
+							y: 8,
+							contents: "High level",
+							offsetX: 0,
+							offsetY: 0,
+							maxWidth: 0.15
+						},
+						{
+							y: 10.5,
+							contents: "<strong>Side note header</strong>",
+							offsetX: 0,
+							offsetY: 0,
+							maxWidth: 0.15
 						}
 					]
 				};
@@ -52,14 +113,13 @@
 					$.plot("#canvas-wrapper", data, options);
 
 					$("input[type=checkbox]").change(function (event) {
-						var values = [];
 						$.each($("input[type=checkbox]"), function (index, chk) {
-							if ($(chk).attr("checked")) {
-								values.push($(chk).attr("value"));
-							}
-						});
+							var value = $(chk).attr("value");
+							var option = {};
+							option[value] = { show: !!$(chk).attr("checked") };
 
-						options.coordinate.type = values.join("|");
+							$.extend(true, options, option);
+						});
 
 						$.plot("#canvas-wrapper", data, options);
 					});
@@ -82,8 +142,8 @@
 			<p>There are 3 styles of comments, check which you want to display:</p>
 		
 			<div><input type="checkbox" id="chk-comments-sidenote" value="sidenote" checked="checked" /> <label for="chk-comments-sidenote">Side note</label></div>
-			<div><input type="checkbox" id="chk-comments-comment" value="comment" /> <label for="chk-comments-comment">Comment</label></div>
-			<div><input type="checkbox" id="chk-comments-tooltip" value="tooltip" /> <label for="chk-comments-tooltip">Tooltip</label></div>
+			<div><input type="checkbox" id="chk-comments-comment" value="comment" checked="checked" /> <label for="chk-comments-comment">Comment</label></div>
+			<div><input type="checkbox" id="chk-comments-tooltip" value="tooltip" checked="checked" /> <label for="chk-comments-tooltip">Tooltip</label></div>
 
 			<p>This example shows how to add different styles of comments to the flot chart.</p>
 			<p>After you referenced the jquery.flot.comments.js, you can pass different style of comments to the <strong>options</strong> object of the flot, and then the plugin will display them for you.</p>

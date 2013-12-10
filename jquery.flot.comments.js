@@ -21,6 +21,28 @@ if (!String.prototype.format) {
     };
 }
 
+// Array extensions:
+if (!Array.prototype.cast) {
+    /// <summary>
+    ///     Cast the elements of an array into another type of object.
+    /// </summary>
+    /// <param name="func">The func operates on each element in the source array, and returns an object who is casted from the element.</param>
+    /// <returns>The array that contains all the casted elements.</returns>
+    Array.prototype.cast = function (func) {
+        var a = [];
+        for (var i = 0; i < this.length; i++) {
+            a.push(func(this[i]));
+        }
+        return a;
+    };
+}
+
+if (!Array.prototype.max) {
+    Array.prototype.max = function () {
+        return Math.max.apply(null, this);
+    };
+}
+
 (function ($) {
     // plugin default options
     var options = {
@@ -79,12 +101,38 @@ if (!String.prototype.format) {
                 offsetY: 0,
                 x: function (x) {
                     return {
-                        "left": x + (this.offsetX || 0)
+                        "left": x + parseFloat(this.offsetX || 0)
                     };
                 },
                 y: function (y) {
                     return {
-                        "top": y + (this.offsetY || 0)
+                        "top": y + parseFloat(this.offsetY || 0)
+                    };
+                }
+            }
+        },
+        sidenote: {
+            "class": "jquery-flot-sidenote",
+            wrapperCss: {
+                "position": "absolute",
+                "display": "block",
+                "line-height": "1.1em",
+                "margin": "0",
+                "font-size": "smaller"
+            },
+            maxWidth: 0.2, /* Width percentage of the whole chart width */
+            show: true,
+            position: {
+                offsetX: "5px",
+                offsetY: 0,
+                x: function(x) {
+                    return {
+                        "left": x + parseFloat(this.offsetX || 0)
+                    };
+                },
+                y: function(y) {
+                    return {
+                        "top": y + parseFloat(this.offsetY || 0)
                     };
                 }
             }
@@ -145,15 +193,15 @@ if (!String.prototype.format) {
     function drawComments(plot) {
         plot.getPlaceholder().find("." + plot.getOptions().comment.class).remove();
 
-        var commentOptions = plot.getOptions().comment;
+        var commentOptions = plot.getOptions().comment || {};
         var comments = plot.getOptions().comments;
         var axes = plot.getAxes();
         var xaxis = axes.xaxis;
         var yaxis = axes.yaxis;
 
-        if ($.isArray(comments) && plot.getOptions().comment.show) {
+        if ($.isArray(comments) && commentOptions.show) {
             $.each(comments, function (index, comment) {
-                var size = measureHtmlSize($(commentOptions.htmlTemplate().format(comment.contents))[0].innerHTML, plot.getPlaceholder()[0], commentOptions.wrapperCss);
+                var size = measureHtmlSize($(commentOptions.htmlTemplate().format(comment.contents))[0].innerHTML, plot.getPlaceholder()[0], commentOptions.wrapperCss || null);
                 var canvasX = xaxis.p2c(comment.x) + plot.getPlotOffset().left - size.width / 2 + (comment.offsetX || 0);
                 var canvasY = yaxis.p2c(comment.y) + plot.getPlotOffset().top - size.height - parseFloat(commentOptions.notch.size) + (comment.offsetY || 0);
 
@@ -170,6 +218,66 @@ if (!String.prototype.format) {
             .css(style)
             .css(commentOptions.position.x(canvasX))
             .css(commentOptions.position.y(canvasY))
+            .appendTo(plot.getPlaceholder());
+    }
+    
+    // Side note:
+    var maxWidth = 0;
+    
+    function initSidenote(plot) {
+        plot.hooks.bindEvents.push(processSidenotes);
+    }
+    
+    function processSidenotes(plot) {
+        var sidenoteOptions = plot.getOptions().sidenote || {};
+        var sidenotes = plot.getOptions().sidenotes;
+        
+        if ($.isArray(sidenotes) && sidenoteOptions.show) {
+            maxWidth = sidenotes.cast(function(element) {
+                var size = measureHtmlSize(element.contents, plot.getPlaceholder()[0], sidenoteOptions.wrapperCss || null);
+                
+                return Math.min(typeof element.maxWidth !== "undefined" ? element.maxWidth : Infinity, size.width / plot.width(), typeof sidenoteOptions.maxWidth !== "undefined" ? sidenoteOptions.maxWidth : Infinity);
+            }).max();
+            
+            resize(plot);
+            drawSidenotes(plot);
+        }
+    }
+    
+    function resize(plot) {
+        plot.resize(plot.width() * (1 - maxWidth));
+        plot.setupGrid();
+        plot.draw();
+    }
+    
+    function drawSidenotes(plot) {
+        var sidenoteOptions = plot.getOptions().sidenote;
+        plot.getPlaceholder().find("." + sidenoteOptions.class).remove();
+
+        var sidenotes = plot.getOptions().sidenotes;
+        var axes = plot.getAxes();
+        var xaxis = axes.xaxis;
+        var yaxis = axes.yaxis;
+        
+        if ($.isArray(sidenotes) && sidenoteOptions.show) {
+            $.each(sidenotes, function(index, sidenote) {
+                var size = measureHtmlSize(sidenote.contents, plot.getPlaceholder()[0], sidenoteOptions.wrapperCss);
+                var canvasX = xaxis.p2c(xaxis.max) + plot.getPlotOffset().left + parseFloat(sidenote.offsetX || 0);
+                var canvasY = yaxis.p2c(sidenote.y) + plot.getPlotOffset().top - size.height / 2 + parseFloat(sidenote.offsetY || 0);
+
+                drawSidenote(plot, canvasX, canvasY, sidenote.contents, sidenoteOptions.wrapperCss);
+            });
+        }
+    }
+    
+    function drawSidenote(plot, canvasX, canvasY, contents, style) {
+        var sidenoteOptions = plot.getOptions().sidenote;
+        var html = "<div class='" + sidenoteOptions.class + "'>" + contents + "</div>";
+        
+        $(html)
+            .css(style)
+            .css(sidenoteOptions.position.x(canvasX))
+            .css(sidenoteOptions.position.y(canvasY))
             .appendTo(plot.getPlaceholder());
     }
 
@@ -216,6 +324,7 @@ if (!String.prototype.format) {
     function init(plot, classes) {
         initTooltip(plot);
         initComment(plot);
+        initSidenote(plot);
     }
 
     $.plot.plugins.push({
