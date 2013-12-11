@@ -1,0 +1,163 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>Flot Examples: Adding comments to the flot chart</title>
+		<link href="examples.css" rel="stylesheet" type="text/css">
+		<!-- flot -->
+		<!--[if lte IE 8]><script language="javascript" type="text/javascript" src="../lib/flot/excanvas.js"></script><![endif]-->
+		<script language="javascript" type="text/javascript" src="../lib/flot/jquery.js"></script>
+		<script language="javascript" type="text/javascript" src="../lib/flot/jquery.colorhelpers.js"></script>
+		<script language="javascript" type="text/javascript" src="../lib/flot/jquery.flot.js"></script>
+	
+		<!-- this plugin -->
+		<script language="javascript" type="text/javascript" src="../jquery.flot.comments.js"></script>
+		<script type="text/javascript">
+
+			$(function () {
+				var data = [
+					[
+						[-3, -5],
+						[-2, 1],
+						[1, 2],
+						[3, 4],
+						[5, 6],
+						[7, 8]
+					],
+					[
+						[-1, Math.sin(-1)],
+						[0, Math.sin(0)],
+						[1, Math.sin(1)],
+						[2, Math.sin(2)],
+						[3, Math.sin(3)],
+						[4, Math.sin(4)],
+						[5, Math.sin(5)],
+						[6, Math.sin(6)]
+					]
+				];
+
+				var options = {
+					series: {
+						points: {
+							show: true
+						},
+						lines: {
+							show: true
+						}
+					},
+					grid: {
+						show: true,
+						borderColor: "#000",
+						borderWidth: 0,
+						aboveData: false
+					},
+					comment: {
+						show: true
+					},
+					comments: [
+						{
+							x: -2,
+							y: 1,
+							contents: "this point 1"
+						},
+						{
+							x: 1,
+							y: 2,
+							contents: "this point 2"
+						},
+						{
+							x: 3.6,
+							y: 2.5,
+							contents: "Expect new point"
+						}
+					],
+					sidenote: {
+						show: true
+					},
+					sidenotes: [
+						{
+							y: -4,
+							contents: "Low Level",
+							offsetX: 0,
+							offsetY: 0,
+							maxWidth: 0.15
+						},
+						{
+							y: 0,
+							contents: "Base Level",
+							offsetX: 0,
+							offsetY: 0,
+							maxWidth: 0.15
+						},
+						{
+							y: 4,
+							contents: "Fair level",
+							offsetX: 0,
+							offsetY: 0,
+							maxWidth: 0.15
+						},
+						{
+							y: 8,
+							contents: "High level",
+							offsetX: 0,
+							offsetY: 0,
+							maxWidth: 0.15
+						},
+						{
+							y: 10.5,
+							contents: "<strong>Side note header</strong>",
+							offsetX: 0,
+							offsetY: 0,
+							maxWidth: 0.15
+						}
+					]
+				};
+
+				$(document).ready(function () {
+					$.plot("#canvas-wrapper", data, options);
+
+					$("input[type=checkbox]").change(function (event) {
+						$.each($("input[type=checkbox]"), function (index, chk) {
+							var value = $(chk).attr("value");
+							var option = {};
+							option[value] = { show: !!$(chk).attr("checked") };
+
+							$.extend(true, options, option);
+						});
+
+						$.plot("#canvas-wrapper", data, options);
+					});
+				});
+			});
+
+		</script>
+	</head>
+	<body>
+
+		<div id="header">
+			<h2>Adding comments to flot chart</h2>
+		</div>
+
+		<div id="content">
+			<div class="demo-container">
+				<div id="canvas-wrapper" class="demo-placeholder"></div>
+			</div>
+        
+			<p>There are 3 styles of comments, check which you want to display:</p>
+		
+			<div><input type="checkbox" id="chk-comments-sidenote" value="sidenote" checked="checked" /> <label for="chk-comments-sidenote">Side note</label></div>
+			<div><input type="checkbox" id="chk-comments-comment" value="comment" checked="checked" /> <label for="chk-comments-comment">Comment</label></div>
+			<div><input type="checkbox" id="chk-comments-tooltip" value="tooltip" checked="checked" /> <label for="chk-comments-tooltip">Tooltip</label></div>
+
+			<p>This example shows how to add different styles of comments to the flot chart.</p>
+			<p>After you referenced the jquery.flot.comments.js, you can pass different style of comments to the <strong>options</strong> object of the flot, and then the plugin will display them for you.</p>
+        
+			<p>You can use different styles of comments at the same time!</p>
+		</div>
+
+		<div id="footer">
+			Copyright &copy; 2013 http://zizhujy.com
+		</div>
+
+	</body>
+</html>
