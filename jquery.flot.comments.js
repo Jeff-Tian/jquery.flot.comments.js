@@ -1,6 +1,6 @@
 ﻿//jquery.flot.comments.js
 //=======================
-//  Copyright (c) 2013 http://zizhujy.com.
+//  Copyright (c) 2013 - 2014 http://zizhujy.com.
 //
 //Flot plugin that shows extra comments to the flot chart. There are several types of comments:
 //    - **tooltip**: Show the data point value (x, y) when mouse over a data point;
@@ -13,7 +13,7 @@
 //Inside the `<head></head>` area of your html page, add the following lines:
 //   
 //```html
-//<script type="text/javascript" src="http://zizhujy.com/Scripts/flot/jquery.flot.comment.js"></script>
+//<script type="text/javascript" src="http://zizhujy.com/Scripts/flot/jquery.flot.comments.js"></script>
 //```
 //
 //pass your comments, sidenotes to the options object when you draw the flot chart by $.plot():
@@ -179,6 +179,9 @@ if (!Array.prototype.max) {
 }
 
 (function ($) {
+    var classes = null;
+    var surface = null;
+
     // plugin default options
     var options = {
         grid: {
@@ -198,12 +201,12 @@ if (!Array.prototype.max) {
             position: {
                 offsetX: 5,
                 offsetY: 5,
-                x: function(x) {
+                x: function (x) {
                     return {
                         "left": x + (this.offsetX || 5)
                     };
                 },
-                y: function(y) {
+                y: function (y) {
                     return {
                         "top": y + (this.offsetY || 5)
                     };
@@ -227,8 +230,8 @@ if (!Array.prototype.max) {
             notch: {
                 size: "5px"
             },
-            htmlTemplate: function() {
-                return "<div class='{1}'><div class='callout' style='position: relative; margin: 0; padding: 0; background-color: #000; width: 1%\0 /* IE 8 width hack */; box-sizing: border-box; padding: 5px;'><div style='line-height: 1em; position: relative;'>{{0}}</div><b class='notch' style='position: absolute; bottom: -{0}; left: 50%; margin: 0 0 0 -{0}; border-top: {0} solid #000; border-left: {0} solid transparent; border-right: {0} solid transparent; border-bottom: 0; padding: 0; width: 0; height: 0; font-size: 0; line-height: 0; _border-right-color: pink; _border-left-color: pink; _filter: chroma(color=pink);'></b></div></div>".format(this.notch.size, this.class);
+            htmlTemplate: function () {
+                return "<div class='{1}'><div class='callout' style='position: relative; margin: 0; padding: 0; background-color: #000; width: 100%\0 /* IE 8 width hack */; box-sizing: border-box; padding: 5px;'><div style='line-height: 1em; position: relative;'>{{0}}</div><b class='notch' style='position: absolute; bottom: -{0}; left: 50%; margin: 0 0 0 -{0}; border-top: {0} solid #000; border-left: {0} solid transparent; border-right: {0} solid transparent; border-bottom: 0; padding: 0; width: 0; height: 0; font-size: 0; line-height: 0; _border-right-color: pink; _border-left-color: pink; _filter: chroma(color=pink);'></b></div></div>".format(this.notch.size, this["class"]);
             },
             show: true,
             position: {
@@ -253,19 +256,20 @@ if (!Array.prototype.max) {
                 "display": "block",
                 "line-height": "1.1em",
                 "margin": "0",
-                "font-size": "smaller"
+                "font-size": "smaller",
+                "width": "100%"
             },
             maxWidth: 0.2, /* Width percentage of the whole chart width */
             show: true,
             position: {
                 offsetX: "5px",
                 offsetY: 0,
-                x: function(x) {
+                x: function (x) {
                     return {
                         "left": x + parseFloat(this.offsetX || 0)
                     };
                 },
-                y: function(y) {
+                y: function (y) {
                     return {
                         "top": y + parseFloat(this.offsetY || 0)
                     };
@@ -314,7 +318,7 @@ if (!Array.prototype.max) {
 
     // Comment:
     function initComment(plot) {
-        plot.hooks.bindEvents.push(processComments);
+        plot.hooks.draw.push(processComments);
     }
 
     function processComments(plot) {
@@ -326,76 +330,215 @@ if (!Array.prototype.max) {
     }
 
     function drawComments(plot) {
-        plot.getPlaceholder().find("." + plot.getOptions().comment.class).remove();
+        var $canvas = $(plot.getCanvas());
+        var $placeholder = $(plot.getPlaceholder());
+        $placeholder.find("." + plot.getOptions().comment["class"]).remove();
 
         var commentOptions = plot.getOptions().comment || {};
         var comments = plot.getOptions().comments;
-        var axes = plot.getAxes();
-        var xaxis = axes.xaxis;
-        var yaxis = axes.yaxis;
 
         if ($.isArray(comments) && commentOptions.show) {
             $.each(comments, function (index, comment) {
-                var size = measureHtmlSize($(commentOptions.htmlTemplate().format(comment.contents))[0].innerHTML, plot.getPlaceholder()[0], commentOptions.wrapperCss || null);
-                var canvasX = xaxis.p2c(comment.x) + plot.getPlotOffset().left - size.width / 2 + (comment.offsetX || 0);
-                var canvasY = yaxis.p2c(comment.y) + plot.getPlotOffset().top - size.height - parseFloat(commentOptions.notch.size) + (comment.offsetY || 0);
-
-                drawComment(plot, canvasX, canvasY, comment.contents, commentOptions.wrapperCss);
+                drawComment.apply(plot, [comment]);
             });
         }
     }
 
-    function drawComment(plot, canvasX, canvasY, contents, style) {
-        var commentOptions = plot.getOptions().comment;
-        var html = commentOptions.htmlTemplate().format(contents);
+    function drawComment(comment) {
+        var plot = this;
+
+        var axes = plot.getAxes();
+        var xaxis = axes.xaxis;
+        var yaxis = axes.yaxis;
+
+        var commentOptions = plot.getOptions().comment || {};
+        var html = commentOptions.htmlTemplate().format(comment.contents);
+
+        var size = measureHtmlSize($(html)[0].innerHTML, plot.getPlaceholder()[0], commentOptions.wrapperCss || null);
+        var canvasX = xaxis.p2c(comment.x) + plot.getPlotOffset().left - size.width / 2 + (comment.offsetX || 0);
+        var canvasY = yaxis.p2c(comment.y) + plot.getPlotOffset().top - size.height - parseFloat(commentOptions.notch.size) + (comment.offsetY || 0);
+
+        // The canvas might have been resized (Don't need if we make drawing comments in the draw() hooks.
+        //canvasX = canvasX * $canvas.width() / $placeholder.width();
+        //canvasY = canvasY * $canvas.height() / $placeholder.height();
 
         $(html)
-            .css(style)
+            .css(commentOptions.wrapperCss)
             .css(commentOptions.position.x(canvasX))
             .css(commentOptions.position.y(canvasY))
             .appendTo(plot.getPlaceholder());
     }
-    
+
+    // Marking:
+    function initMarking(plot) {
+        plot.hooks.draw.push(processMarkings);
+    }
+
+    function processMarkings(plot) {
+        var markings = plot.getOptions().markings;
+
+        if (markings) {
+            drawMarkings(plot);
+        }
+    }
+
+    function drawMarkings(plot) {
+        var markingOptions = plot.getOptions().marking || {};
+        var markings = plot.getOptions().markings;
+
+        if (surface == null) {
+            surface = new classes.Canvas("flot-base", plot.getPlaceholder());
+        }
+
+        surface.removeText("flot-markings-extra");
+
+        if ($.isArray(markings)) {
+            $.each(markings, function (index, marking) {
+                if (marking.isExtra) {
+                    drawMarking.apply(plot, [marking]);
+                }
+            });
+        }
+    }
+
+    function drawMarking(marking, markingLayer) {
+        var plot = this;
+        markingLayer = markingLayer || "flot-markings-extra";
+
+        if (surface == null) {
+            surface = new classes.Canvas("flot-base", plot.getPlaceholder());
+        }
+
+        var plotOptions = plot.getOptions();
+        var plotOffset = plot.getPlotOffset();
+        var xrange = $.extend(true, {}, marking.xaxis);
+        var yrange = $.extend(true, {}, marking.yaxis);
+
+        var axes = plot.getAxes();
+        var xaxis = axes.xaxis;
+        var yaxis = axes.yaxis;
+
+        // fill in missing
+        if (xrange.from == null) {
+            xrange.from = xaxis.min;
+        }
+
+        if (xrange.to == null) {
+            xrange.to = xaxis.max;
+        }
+
+        if (yrange.from == null) {
+            yrange.from = yaxis.min;
+        }
+
+        if (yrange.to == null) {
+            yrange.to = yaxis.max;
+        }
+
+        // clip
+        if (xrange.to < xaxis.min || xrange.from > xaxis.max ||
+            yrange.to < yaxis.min || yrange.from > yaxis.max) {
+            return;
+        }
+
+        xrange.from = Math.max(xrange.from, xaxis.min);
+        xrange.to = Math.min(xrange.to, xaxis.max);
+        yrange.from = Math.max(yrange.from, yaxis.min);
+        yrange.to = Math.min(yrange.to, yaxis.max);
+
+        // then draw
+        xrange.from = Math.floor(xaxis.p2c(xrange.from));
+        xrange.to = Math.floor(xaxis.p2c(xrange.to));
+        yrange.from = Math.floor(yaxis.p2c(yrange.from));
+        yrange.to = Math.floor(yaxis.p2c(yrange.to));
+
+        var ctx = surface.context;
+        ctx.fillStyle = marking.color || plotOptions.grid.markingsColor;
+        ctx.fillRect(xrange.from, yrange.to, xrange.to - xrange.from, yrange.from - yrange.to);
+
+        if (marking.text) {
+            // left aligned horizontal position:
+            var xPos = xrange.from + plotOffset.left;
+            // top baselined vertical position:
+            var yPos = yrange.to + plotOffset.top;
+
+            if (!!marking.textAlign) {
+                switch(marking.textAlign.toLowerCase()) {
+                    case "right":
+                        xPos = xrange.to + plotOffset.left;
+                        break;
+                    case "center":
+                        xPos = (xrange.from + plotOffset.left + xrange.to + plotOffset.left) / 2;
+                        break;
+                }
+            }
+
+            if (!!marking.textBaseline) {
+                switch(marking.textBaseline.toLowerCase()) {
+                    case "bottom":
+                        yPos = (yrange.from + plotOffset.top);
+                        break;
+                    case "middle":
+                        yPos = (yrange.from + plotOffset.top + yrange.to + plotOffset.top) / 2;
+                        break;
+                }
+            }
+
+            surface.addText(markingLayer, xPos, yPos, marking.text, marking.font || "flot-marking-extra", 0, null, marking.textAlign, marking.textBaseline);
+
+            surface.render();
+        }
+    }
+
     // Side note:
     var maxWidth = 0;
-    
+
     function initSidenote(plot) {
         plot.hooks.bindEvents.push(processSidenotes);
     }
-    
+
     function processSidenotes(plot) {
         var sidenoteOptions = plot.getOptions().sidenote || {};
         var sidenotes = plot.getOptions().sidenotes;
-        
+
         if ($.isArray(sidenotes) && sidenoteOptions.show) {
-            maxWidth = sidenotes.cast(function(element) {
+            maxWidth = sidenotes.cast(function (element) {
                 var size = measureHtmlSize(element.contents, plot.getPlaceholder()[0], sidenoteOptions.wrapperCss || null);
-                
+
                 return Math.min(typeof element.maxWidth !== "undefined" ? element.maxWidth : Infinity, size.width / plot.width(), typeof sidenoteOptions.maxWidth !== "undefined" ? sidenoteOptions.maxWidth : Infinity);
             }).max();
-            
+
             resize(plot);
+
+            plot.getPlaceholder().resize(function () {
+                drawSidenotes(plot);
+            });
             drawSidenotes(plot);
         }
     }
-    
+
     function resize(plot) {
-        plot.resize(plot.width() * (1 - maxWidth));
-        plot.setupGrid();
-        plot.draw();
+        //console.log("resized to " + plot.width());
+        //plot.resize(plot.width() * (1 - maxWidth));
+        // Resize the placeholder directly, and let the jquery.flot.resize.js to resize the inner canvas.
+        plot.getPlaceholder().css({
+            width: plot.width() * (1 - maxWidth) + "px"
+        });
+        //plot.setupGrid();
+        //plot.draw();
     }
-    
+
     function drawSidenotes(plot) {
         var sidenoteOptions = plot.getOptions().sidenote;
-        plot.getPlaceholder().find("." + sidenoteOptions.class).remove();
+        plot.getPlaceholder().find("." + sidenoteOptions["class"]).remove();
 
         var sidenotes = plot.getOptions().sidenotes;
         var axes = plot.getAxes();
         var xaxis = axes.xaxis;
         var yaxis = axes.yaxis;
-        
+
         if ($.isArray(sidenotes) && sidenoteOptions.show) {
-            $.each(sidenotes, function(index, sidenote) {
+            $.each(sidenotes, function (index, sidenote) {
                 var size = measureHtmlSize(sidenote.contents, plot.getPlaceholder()[0], sidenoteOptions.wrapperCss);
                 var canvasX = xaxis.p2c(xaxis.max) + plot.getPlotOffset().left + parseFloat(sidenote.offsetX || 0);
                 var canvasY = yaxis.p2c(sidenote.y) + plot.getPlotOffset().top - size.height / 2 + parseFloat(sidenote.offsetY || 0);
@@ -404,11 +547,11 @@ if (!Array.prototype.max) {
             });
         }
     }
-    
+
     function drawSidenote(plot, canvasX, canvasY, contents, style) {
         var sidenoteOptions = plot.getOptions().sidenote;
-        var html = "<div class='" + sidenoteOptions.class + "'>" + contents + "</div>";
-        
+        var html = "<div class='" + sidenoteOptions["class"] + "'>" + contents + "</div>";
+
         $(html)
             .css(style)
             .css(sidenoteOptions.position.x(canvasX))
@@ -456,16 +599,22 @@ if (!Array.prototype.max) {
         return result;
     }
 
-    function init(plot, classes) {
+    function init(plot, theClasses) {
+        classes = theClasses;
+
+        initSidenote(plot);
         initTooltip(plot);
         initComment(plot);
-        initSidenote(plot);
+        initMarking(plot);
+
+        plot.drawComment = drawComment;
+        plot.drawMarking = drawMarking;
     }
 
     $.plot.plugins.push({
         init: init,
         options: options,
         name: "comments",
-        version: "1.1"
+        version: "1.5"
     });
 })(jQuery);
