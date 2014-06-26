@@ -231,7 +231,7 @@ if (!Array.prototype.max) {
                 size: "5px"
             },
             htmlTemplate: function () {
-                return "<div class='{1}'><div class='callout' style='position: relative; margin: 0; padding: 0; background-color: #000; width: 100%\0 /* IE 8 width hack */; box-sizing: border-box; padding: 5px;'><div style='line-height: 1em; position: relative;'>{{0}}</div><b class='notch' style='position: absolute; bottom: -{0}; left: 50%; margin: 0 0 0 -{0}; border-top: {0} solid #000; border-left: {0} solid transparent; border-right: {0} solid transparent; border-bottom: 0; padding: 0; width: 0; height: 0; font-size: 0; line-height: 0; _border-right-color: pink; _border-left-color: pink; _filter: chroma(color=pink);'></b></div></div>".format(this.notch.size, this["class"]);
+                return "<div class='{1}'><div class='callout' style='position: relative; margin: 0; padding: 0; background-color: #000; width: 1%\0 /* IE 8 width hack */; box-sizing: border-box; padding: 5px;'><div style='line-height: 1em; position: relative;'>{{0}}</div><b class='notch' style='position: absolute; bottom: -{0}; left: 50%; margin: 0 0 0 -{0}; border-top: {0} solid #000; border-left: {0} solid transparent; border-right: {0} solid transparent; border-bottom: 0; padding: 0; width: 0; height: 0; font-size: 0; line-height: 0; _border-right-color: pink; _border-left-color: pink; _filter: chroma(color=pink);'></b></div></div>".format(this.notch.size, this["class"]);
             },
             show: true,
             position: {
@@ -253,11 +253,11 @@ if (!Array.prototype.max) {
             "class": "jquery-flot-sidenote",
             wrapperCss: {
                 "position": "absolute",
-                "display": "block",
+                "display": "inline",
                 "line-height": "1.1em",
                 "margin": "0",
                 "font-size": "smaller",
-                "width": "100%"
+                "width": "auto"
             },
             maxWidth: 0.2, /* Width percentage of the whole chart width */
             show: true,
@@ -463,7 +463,7 @@ if (!Array.prototype.max) {
             var yPos = yrange.to + plotOffset.top;
 
             if (!!marking.textAlign) {
-                switch(marking.textAlign.toLowerCase()) {
+                switch (marking.textAlign.toLowerCase()) {
                     case "right":
                         xPos = xrange.to + plotOffset.left;
                         break;
@@ -474,7 +474,7 @@ if (!Array.prototype.max) {
             }
 
             if (!!marking.textBaseline) {
-                switch(marking.textBaseline.toLowerCase()) {
+                switch (marking.textBaseline.toLowerCase()) {
                     case "bottom":
                         yPos = (yrange.from + plotOffset.top);
                         break;
@@ -497,15 +497,36 @@ if (!Array.prototype.max) {
         plot.hooks.bindEvents.push(processSidenotes);
     }
 
+    function getSidenoteStyle(plot, sidenoteOptions) {
+        var style = $.extend(true, {
+            "display": "inline"
+        }, sidenoteOptions.wrapperCss);
+
+        if (sidenoteOptions.maxWidth) {
+            style["max-width"] = (plot.width() * sidenoteOptions.maxWidth) + "px";
+        }
+
+        return style;
+    }
+
+    function measureSidenote(plot, sidenote, style) {
+        var size = measureHtmlSize(sidenote.contents, plot.getPlaceholder()[0], style);
+
+        return size;
+    }
+
     function processSidenotes(plot) {
         var sidenoteOptions = plot.getOptions().sidenote || {};
         var sidenotes = plot.getOptions().sidenotes;
 
         if ($.isArray(sidenotes) && sidenoteOptions.show) {
             maxWidth = sidenotes.cast(function (element) {
-                var size = measureHtmlSize(element.contents, plot.getPlaceholder()[0], sidenoteOptions.wrapperCss || null);
+                var style = getSidenoteStyle(plot, sidenoteOptions);
+                var size = measureSidenote(plot, element, style);
 
-                return Math.min(typeof element.maxWidth !== "undefined" ? element.maxWidth : Infinity, size.width / plot.width(), typeof sidenoteOptions.maxWidth !== "undefined" ? sidenoteOptions.maxWidth : Infinity);
+                var ret = Math.min(typeof element.maxWidth !== "undefined" ? element.maxWidth : Infinity, size.width / plot.width(), typeof sidenoteOptions.maxWidth !== "undefined" ? sidenoteOptions.maxWidth : Infinity);
+
+                return ret;
             }).max();
 
             resize(plot);
@@ -539,11 +560,16 @@ if (!Array.prototype.max) {
 
         if ($.isArray(sidenotes) && sidenoteOptions.show) {
             $.each(sidenotes, function (index, sidenote) {
-                var size = measureHtmlSize(sidenote.contents, plot.getPlaceholder()[0], sidenoteOptions.wrapperCss);
+                var style = getSidenoteStyle(plot, sidenoteOptions);
+                var size = measureSidenote(plot, sidenote, style);
+
                 var canvasX = xaxis.p2c(xaxis.max) + plot.getPlotOffset().left + parseFloat(sidenote.offsetX || 0);
                 var canvasY = yaxis.p2c(sidenote.y) + plot.getPlotOffset().top - size.height / 2 + parseFloat(sidenote.offsetY || 0);
 
-                drawSidenote(plot, canvasX, canvasY, sidenote.contents, sidenoteOptions.wrapperCss);
+                style.width = size.width + "px";
+                style.height = size.height + "px";
+
+                drawSidenote(plot, canvasX, canvasY, sidenote.contents, style);
             });
         }
     }
@@ -615,6 +641,6 @@ if (!Array.prototype.max) {
         init: init,
         options: options,
         name: "comments",
-        version: "1.5"
+        version: "1.6"
     });
 })(jQuery);
