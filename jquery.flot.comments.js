@@ -220,7 +220,7 @@ if (!Array.prototype.max) {
                 "display": "block",
                 "margin": "0",
                 "line-height": "1em",
-                "background-color": "transparent",
+                "background-color": "#000",
                 "color": "white",
                 "padding": "0",
                 "font-size": "xx-small",
@@ -228,10 +228,11 @@ if (!Array.prototype.max) {
                 "text-align": "center"
             },
             notch: {
-                size: "5px"
+                size: "5px",
+                color: "#000"
             },
             htmlTemplate: function () {
-                return "<div class='{1}'><div class='callout' style='position: relative; margin: 0; padding: 0; background-color: #000; width: 1%\0 /* IE 8 width hack */; box-sizing: border-box; padding: 5px;'><div style='line-height: 1em; position: relative;'>{{0}}</div><b class='notch' style='position: absolute; bottom: -{0}; left: 50%; margin: 0 0 0 -{0}; border-top: {0} solid #000; border-left: {0} solid transparent; border-right: {0} solid transparent; border-bottom: 0; padding: 0; width: 0; height: 0; font-size: 0; line-height: 0; _border-right-color: pink; _border-left-color: pink; _filter: chroma(color=pink);'></b></div></div>".format(this.notch.size, this["class"]);
+                return "<div class='{1}'><div class='callout' style='position: relative; margin: 0; box-sizing: border-box; padding: 5px; width: auto; _width: 1%\0 /* IE 8 width hack */;'><div style='line-height: 1em; position: relative;'>{{0}}</div><b class='notch' style='position: absolute; bottom: -{0}; left: 50%; margin: 0 0 0 -{0}; border-top: {0} solid {2}; border-left: {0} solid transparent; border-right: {0} solid transparent; border-bottom: 0; padding: 0; width: 0; height: 0; font-size: 0; line-height: 0; _border-right-color: pink; _border-left-color: pink; _filter: chroma(color=pink);'></b></div></div>".format(this.notch.size, this["class"], this.notch.color);
             },
             show: true,
             position: {
@@ -353,7 +354,6 @@ if (!Array.prototype.max) {
 
         var commentOptions = plot.getOptions().comment || {};
         var html = commentOptions.htmlTemplate().format(comment.contents);
-
         var size = measureHtmlSize($(html)[0].innerHTML, plot.getPlaceholder()[0], commentOptions.wrapperCss || null);
         var canvasX = xaxis.p2c(comment.x) + plot.getPlotOffset().left - size.width / 2 + (comment.offsetX || 0);
         var canvasY = yaxis.p2c(comment.y) + plot.getPlotOffset().top - size.height - parseFloat(commentOptions.notch.size) + (comment.offsetY || 0);
@@ -608,8 +608,31 @@ if (!Array.prototype.max) {
         } else {
             for (var p in style) {
                 div.style[p] = style[p];
+
+                // IE 8 style handling:
+                // for example:
+                //if (!div.style.backgroundColor) {
+                //    div.style.backgroundColor = div.style["background-color"];
+                //}
+
+                //if (!div.style.fontSize) {
+                //    div.style.fontSize = div.style["font-size"];
+                //}
+
+                if (p.indexOf("-") >= 0) {
+                    var camelStyle = p.replace(/-(\w)/, function(m, p1, offset, s) {
+                        return p1.toUpperCase();
+                    });
+
+                    debugger;
+
+                    if (!div.style[camelStyle]) {
+                        div.style[camelStyle] = div.style[p];
+                    }
+                }
             }
         }
+
         measureContainer.appendChild(div);
 
         var result = { width: div.offsetWidth, height: div.offsetHeight };
@@ -641,6 +664,6 @@ if (!Array.prototype.max) {
         init: init,
         options: options,
         name: "comments",
-        version: "1.6"
+        version: "1.8"
     });
 })(jQuery);
