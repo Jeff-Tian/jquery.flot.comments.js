@@ -398,6 +398,11 @@ if (!Array.prototype.max) {
         var xaxis = axes.xaxis;
         var yaxis = axes.yaxis;
 
+        var xmin = axes.xaxis.min;
+        var xmax = axes.xaxis.max;
+        var ymin = axes.yaxis.min;
+        var ymax = axes.yaxis.max;
+
         var commentOptions = plot.getOptions().comment || {};
 
         var notchPosition = comment.notch && comment.notch.position
@@ -407,27 +412,27 @@ if (!Array.prototype.max) {
         var html = commentOptions.htmlTemplate(comment.contents, notchPosition);
 
         var size = measureHtmlSize($(html)[0].innerHTML, plot.getPlaceholder()[0], commentOptions.wrapperCss || null);
-        var canvasX = xaxis.p2c(comment.x) + plot.getPlotOffset().left - size.width / 2 + (comment.offsetX || 0);
-        var canvasY;
+        if (comment.x >= xmin && comment.x <= xmax) {
+            if (comment.y >= ymin && comment.y <= ymax) {
+                var canvasX = xaxis.p2c(comment.x) + plot.getPlotOffset().left - size.width / 2 + (comment.offsetX || 0);
+                var canvasY;
 
-        switch (notchPosition.toLowerCase()) {
-            case 'top':
-                canvasY = yaxis.p2c(comment.y) + plot.getPlotOffset().top + parseFloat(commentOptions.notch.size) - (comment.offsetY || 0);
-                break;
-            default:
-                canvasY = yaxis.p2c(comment.y) + plot.getPlotOffset().top - size.height - parseFloat(commentOptions.notch.size) + (comment.offsetY || 0);
-                break;
+                switch (notchPosition.toLowerCase()) {
+                    case 'top':
+                        canvasY = yaxis.p2c(comment.y) + plot.getPlotOffset().top + parseFloat(commentOptions.notch.size) - (comment.offsetY || 0);
+                        break;
+                    default:
+                        canvasY = yaxis.p2c(comment.y) + plot.getPlotOffset().top - size.height - parseFloat(commentOptions.notch.size) + (comment.offsetY || 0);
+                        break;
+                }
+
+                $(html)
+                    .css(commentOptions.wrapperCss)
+                    .css(commentOptions.position.x(canvasX))
+                    .css(commentOptions.position.y(canvasY))
+                    .appendTo(plot.getPlaceholder());
+            }
         }
-
-        // The canvas might have been resized (Don't need if we make drawing comments in the draw() hooks.
-        //canvasX = canvasX * $canvas.width() / $placeholder.width();
-        //canvasY = canvasY * $canvas.height() / $placeholder.height();
-
-        $(html)
-            .css(commentOptions.wrapperCss)
-            .css(commentOptions.position.x(canvasX))
-            .css(commentOptions.position.y(canvasY))
-            .appendTo(plot.getPlaceholder());
     }
 
     // Marking:
@@ -725,6 +730,6 @@ if (!Array.prototype.max) {
         init: init,
         options: options,
         name: "comments",
-        version: "1.9"
+        version: "2.0"
     });
 })(jQuery);
