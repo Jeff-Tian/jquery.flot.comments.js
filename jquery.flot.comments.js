@@ -13,7 +13,7 @@
 //Inside the `<head></head>` area of your html page, add the following lines:
 //   
 //```html
-//<script type="text/javascript" src="http://zizhujy.com/Scripts/flot/jquery.flot.comments.js"></script>
+//<script type="text/javascript" src="http://zizhujy.com/Scripts/flot/jquery.flot.comments/jquery.flot.comments.js"></script>
 //```
 //
 //pass your comments, sidenotes to the options object when you draw the flot chart by $.plot():
@@ -78,10 +78,11 @@
 //            "text-align": "center"
 //        },
 //        notch: {
-//                size: "5px"
+//                size: "5px",
+//                position: 'bottom'
 //        },
 //        htmlTemplate: function() {
-//            return "<div class='{1}'><div class='callout' style='position: relative; margin: 0; padding: 0; background-color: #000; width: 1%\0 /* IE 8 width hack */; box-sizing: border-box; padding: 5px;'><div style='line-height: 1em; position: relative;'>{{0}}</div><b class='notch' style='position: absolute; bottom: -{0}; left: 50%; margin: 0 0 0 -{0}; border-top: {0} solid #000; border-left: {0} solid transparent; border-right: {0} solid transparent; border-bottom: 0; padding: 0; width: 0; height: 0; font-size: 0; line-height: 0; _border-right-color: pink; _border-left-color: pink; _filter: chroma(color=pink);'></b></div></div>".format(this.notch.size, this.class);
+//            return "<div class='{1}'><div class='callout' style='position: relative; margin: 0; box-sizing: border-box; padding: 5px; width: auto; _width: 1%\0 /* IE 8 width hack */;'><div style='line-height: 1em; position: relative;'>{{0}}</div><b class='notch' style='position: absolute; {{1}}: -{0}; left: 50%; margin: 0 0 0 -{0}; border-{{2}}: {0} solid {2}; border-left: {0} solid transparent; border-right: {0} solid transparent; border-{{1}}: 0; padding: 0; width: 0; height: 0; font-size: 0; line-height: 0; _border-right-color: pink; _border-left-color: pink; _filter: chroma(color=pink);'></b></div></div>".format(this.notch.size, this["class"], this.notch.color);
 //        },
 //        show: true,
 //        position: {
@@ -156,6 +157,57 @@ if (!String.prototype.format) {
     };
 }
 
+if (!Array.prototype.map) {
+    Array.prototype.map = function (fun /*, thisArg */) {
+        var originalArray = Object(this);
+        var len = originalArray.length >>> 0;
+        if (typeof fun !== "function")
+            throw new TypeError(fun + " is not a function");
+
+        var res = new Array(len);
+        var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
+        for (var i = 0; i < len; i++) {
+            // NOTE: Absolute correctness would demand Object.defineProperty
+            //       be used.  But this method is fairly new, and failure is
+            //       possible only if Object.prototype or Array.prototype
+            //       has a property |i| (very unlikely), so use a less-correct
+            //       but more portable alternative.
+            if (i in originalArray) {
+                res[i] = fun.call(thisArg, originalArray[i], i, originalArray);
+            }
+        }
+
+        return res;
+    };
+}
+
+if (!Array.prototype.filter) {
+    Array.prototype.filter = function (fun /*, thisArg */) {
+        var t = Object(this);
+        var len = t.length >>> 0;
+        if (typeof fun != "function")
+            throw new TypeError();
+
+        var res = [];
+        var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
+        for (var i = 0; i < len; i++) {
+            if (i in t) {
+                var val = t[i];
+
+                // NOTE: Technically this should Object.defineProperty at
+                //       the next index, as push can be affected by
+                //       properties on Object.prototype and Array.prototype.
+                //       But that method's new, and collisions should be
+                //       rare, so use the more-compatible alternative.
+                if (fun.call(thisArg, val, i, t))
+                    res.push(val);
+            }
+        }
+
+        return res;
+    };
+}
+
 if (!Array.prototype.max) {
     Array.prototype.max = function () {
         return Math.max.apply(null, this);
@@ -213,10 +265,20 @@ if (!Array.prototype.max) {
             },
             notch: {
                 size: "5px",
-                color: "#000"
+                color: "#000",
+                position: 'bottom'
             },
-            htmlTemplate: function () {
-                return "<div class='{1}'><div class='callout' style='position: relative; margin: 0; box-sizing: border-box; padding: 5px; width: auto; _width: 1%\0 /* IE 8 width hack */;'><div style='line-height: 1em; position: relative;'>{{0}}</div><b class='notch' style='position: absolute; bottom: -{0}; left: 50%; margin: 0 0 0 -{0}; border-top: {0} solid {2}; border-left: {0} solid transparent; border-right: {0} solid transparent; border-bottom: 0; padding: 0; width: 0; height: 0; font-size: 0; line-height: 0; _border-right-color: pink; _border-left-color: pink; _filter: chroma(color=pink);'></b></div></div>".format(this.notch.size, this["class"], this.notch.color);
+            htmlTemplate: function (commentContent, notchPosition) {
+                var inverse = {
+                    'bottom': 'top',
+                    'top': 'bottom'
+                };
+
+                var template = "<div class='{1}'><div class='callout' style='position: relative; margin: 0; box-sizing: border-box; padding: 5px; width: auto; _width: 1%\0 /* IE 8 width hack */;'><div style='line-height: 1em; position: relative;'>{{0}}</div><b class='notch' style='position: absolute; {{1}}: -{0}; left: 50%; margin: 0 0 0 -{0}; border-{{2}}: {0} solid {2}; border-left: {0} solid transparent; border-right: {0} solid transparent; border-{{1}}: 0; padding: 0; width: 0; height: 0; font-size: 0; line-height: 0; _border-right-color: pink; _border-left-color: pink; _filter: chroma(color=pink);'></b></div></div>".format(this.notch.size, this["class"], this.notch.color);
+
+                notchPosition = notchPosition || this.notch.position;
+
+                return template.format(commentContent, notchPosition, inverse[notchPosition]);
             },
             show: true,
             position: {
@@ -337,10 +399,25 @@ if (!Array.prototype.max) {
         var yaxis = axes.yaxis;
 
         var commentOptions = plot.getOptions().comment || {};
-        var html = commentOptions.htmlTemplate().format(comment.contents);
+
+        var notchPosition = comment.notch && comment.notch.position
+            || commentOptions.notch && commentOptions.notch.position
+            || 'bottom';
+
+        var html = commentOptions.htmlTemplate(comment.contents, notchPosition);
+
         var size = measureHtmlSize($(html)[0].innerHTML, plot.getPlaceholder()[0], commentOptions.wrapperCss || null);
         var canvasX = xaxis.p2c(comment.x) + plot.getPlotOffset().left - size.width / 2 + (comment.offsetX || 0);
-        var canvasY = yaxis.p2c(comment.y) + plot.getPlotOffset().top - size.height - parseFloat(commentOptions.notch.size) + (comment.offsetY || 0);
+        var canvasY;
+
+        switch (notchPosition.toLowerCase()) {
+            case 'top':
+                canvasY = yaxis.p2c(comment.y) + plot.getPlotOffset().top + parseFloat(commentOptions.notch.size) - (comment.offsetY || 0);
+                break;
+            default:
+                canvasY = yaxis.p2c(comment.y) + plot.getPlotOffset().top - size.height - parseFloat(commentOptions.notch.size) + (comment.offsetY || 0);
+                break;
+        }
 
         // The canvas might have been resized (Don't need if we make drawing comments in the draw() hooks.
         //canvasX = canvasX * $canvas.width() / $placeholder.width();
@@ -504,7 +581,7 @@ if (!Array.prototype.max) {
         var sidenotes = plot.getOptions().sidenotes;
 
         if ($.isArray(sidenotes) && sidenoteOptions.show) {
-            maxWidth = sidenotes.cast(function (element) {
+            maxWidth = sidenotes.map(function (element) {
                 var style = getSidenoteStyle(plot, sidenoteOptions);
                 var size = measureSidenote(plot, element, style);
 
@@ -523,14 +600,16 @@ if (!Array.prototype.max) {
     }
 
     function resize(plot) {
-        //console.log("resized to " + plot.width());
-        //plot.resize(plot.width() * (1 - maxWidth));
-        // Resize the placeholder directly, and let the jquery.flot.resize.js to resize the inner canvas.
-        plot.getPlaceholder().css({
-            width: plot.width() * (1 - maxWidth) + "px"
-        });
-        //plot.setupGrid();
-        //plot.draw();
+        if ($.plot.plugins.filter(function (item) { return item.name === 'resize'; }).length > 0) {
+            // Resize the placeholder directly, and let the jquery.flot.resize.js to resize the inner canvas.
+            plot.getPlaceholder().css({
+                width: plot.width() * (1 - maxWidth) + "px"
+            });
+        } else {
+            plot.resize(plot.width() * (1 - maxWidth));
+            plot.setupGrid();
+            plot.draw();
+        }
     }
 
     function drawSidenotes(plot) {
@@ -604,11 +683,9 @@ if (!Array.prototype.max) {
                 //}
 
                 if (p.indexOf("-") >= 0) {
-                    var camelStyle = p.replace(/-(\w)/, function(m, p1, offset, s) {
+                    var camelStyle = p.replace(/-(\w)/, function (m, p1, offset, s) {
                         return p1.toUpperCase();
                     });
-
-                    debugger;
 
                     if (!div.style[camelStyle]) {
                         div.style[camelStyle] = div.style[p];
