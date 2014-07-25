@@ -156,22 +156,6 @@ if (!String.prototype.format) {
     };
 }
 
-// Array extensions:
-if (!Array.prototype.cast) {
-    /// <summary>
-    ///     Cast the elements of an array into another type of object.
-    /// </summary>
-    /// <param name="func">The func operates on each element in the source array, and returns an object who is casted from the element.</param>
-    /// <returns>The array that contains all the casted elements.</returns>
-    Array.prototype.cast = function (func) {
-        var a = [];
-        for (var i = 0; i < this.length; i++) {
-            a.push(func(this[i]));
-        }
-        return a;
-    };
-}
-
 if (!Array.prototype.max) {
     Array.prototype.max = function () {
         return Math.max.apply(null, this);
@@ -664,6 +648,6 @@ if (!Array.prototype.max) {
         init: init,
         options: options,
         name: "comments",
-        version: "1.8"
+        version: "1.9"
     });
 })(jQuery);
