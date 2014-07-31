@@ -605,20 +605,9 @@ if (!Array.prototype.max) {
     }
 
     function resize(plot) {
-        //if ($.plot.plugins.filter(function (item) { return item.name === 'resize'; }).length > 0) {
-        //    // Resize the placeholder directly, and let the jquery.flot.resize.js to resize the inner canvas.
-        //    plot.getPlaceholder().css({
-        //        width: plot.width() * (1 - maxWidth) + "px"
-        //    });
-        //} else {
-
-        // Don't change the placeholder's width, otherwise there would be problem that every time
-        // you redraw the plot, the placeholder would get narrower and narrower.
-
         plot.resize(plot.width() * (1 - maxWidth));
         plot.setupGrid();
         plot.draw();
-        //}
     }
 
     function drawSidenotes(plot) {
@@ -735,12 +724,30 @@ if (!Array.prototype.max) {
 
         plot.drawComment = drawComment;
         plot.drawMarking = drawMarking;
+
+        function onResize() {
+            // Wait for the jquery.flot.resize.js to resize the plot, then draw side process sidenotes.
+            setTimeout(function () {
+                processSidenotes(plot);
+            }, 200);
+        }
+
+        // Work with jquery.flot.resize.js
+        if ($.plot.plugins.filter(function (item) { return item.name === 'resize'; }).length > 0) {
+            plot.hooks.bindEvents.push(function () {
+                plot.getPlaceholder().resize(onResize);
+            });
+
+            plot.hooks.shutdown.push(function () {
+                plot.getPlaceholder().unbind('resize', onResize);
+            });
+        }
     }
 
     $.plot.plugins.push({
         init: init,
         options: options,
         name: "comments",
-        version: "2.2"
+        version: "2.3"
     });
 })(jQuery);
