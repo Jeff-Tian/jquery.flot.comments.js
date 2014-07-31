@@ -605,16 +605,20 @@ if (!Array.prototype.max) {
     }
 
     function resize(plot) {
-        if ($.plot.plugins.filter(function (item) { return item.name === 'resize'; }).length > 0) {
-            // Resize the placeholder directly, and let the jquery.flot.resize.js to resize the inner canvas.
-            plot.getPlaceholder().css({
-                width: plot.width() * (1 - maxWidth) + "px"
-            });
-        } else {
-            plot.resize(plot.width() * (1 - maxWidth));
-            plot.setupGrid();
-            plot.draw();
-        }
+        //if ($.plot.plugins.filter(function (item) { return item.name === 'resize'; }).length > 0) {
+        //    // Resize the placeholder directly, and let the jquery.flot.resize.js to resize the inner canvas.
+        //    plot.getPlaceholder().css({
+        //        width: plot.width() * (1 - maxWidth) + "px"
+        //    });
+        //} else {
+
+        // Don't change the placeholder's width, otherwise there would be problem that every time
+        // you redraw the plot, the placeholder would get narrower and narrower.
+
+        plot.resize(plot.width() * (1 - maxWidth));
+        plot.setupGrid();
+        plot.draw();
+        //}
     }
 
     function drawSidenotes(plot) {
