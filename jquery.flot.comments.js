@@ -638,8 +638,8 @@ if (!Array.prototype.max) {
                 var canvasX = xaxis.p2c(xaxis.max) + plot.getPlotOffset().left + parseFloat(sidenote.offsetX || 0);
                 var canvasY = yaxis.p2c(sidenote.y) + plot.getPlotOffset().top - size.height / 2 + parseFloat(sidenote.offsetY || 0);
 
-                style.width = size.width + "px";
-                style.height = size.height + "px";
+                style.minWidth = style['min-width'] = size.width + "px";
+                style.minHeight = style['min-height'] = size.height + "px";
 
                 drawSidenote(plot, canvasX, canvasY, sidenote.contents, style);
             });
@@ -649,6 +649,8 @@ if (!Array.prototype.max) {
     function drawSidenote(plot, canvasX, canvasY, contents, style) {
         var sidenoteOptions = plot.getOptions().sidenote;
         var html = "<div class='" + sidenoteOptions["class"] + "'>" + contents + "</div>";
+
+        style.width = "100%";
 
         $(html)
             .css(style)
@@ -661,8 +663,9 @@ if (!Array.prototype.max) {
     function measureHtmlSize(html, measureContainer, style) {
 
         // This global variable is used to cache repeated calls with the same arguments
-        if (typeof (__measurehtml_cache__) == "object" && __measurehtml_cache__[html]) {
-            return __measurehtml_cache__[html];
+        if (typeof (__measurehtml_cache__) == "object" && __measurehtml_cache__[html] &&
+            __measurehtml_cache__[html][JSON.stringify(style)]) {
+            return __measurehtml_cache__[html][JSON.stringify(style)];
         }
 
         measureContainer = measureContainer || document.body;
@@ -710,10 +713,14 @@ if (!Array.prototype.max) {
 
         // Add the sizes to the cache as adding DOM elements is costly and can cause slow downs
         if (typeof (__measurehtml_cache__) != "object") {
-            __measurehtml_cache__ = [];
+            __measurehtml_cache__ = {};
         }
 
-        __measurehtml_cache__[html] = result;
+        if (typeof (__measurehtml_cache__[html]) != 'object') {
+            __measurehtml_cache__[html] = {};
+        }
+
+        __measurehtml_cache__[html][JSON.stringify(style)] = result;
 
         return result;
     }
@@ -734,6 +741,6 @@ if (!Array.prototype.max) {
         init: init,
         options: options,
         name: "comments",
-        version: "2.0"
+        version: "2.2"
     });
 })(jQuery);
